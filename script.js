@@ -117,6 +117,28 @@ function removeNumbersSmart(board, level) {
 }
 
 // ------------------------------
+// TEMATICAS
+// ------------------------------
+let theme = "classic"; // tema por defecto
+
+const themeSelect = document.getElementById("theme-select");
+themeSelect.addEventListener("change", function() {
+    theme = this.value;
+    displaySudoku(currentPuzzle); // refresca la cuadrícula con el nuevo tema
+});
+const brailleMap = {
+    1: "⠁", 2: "⠃", 3: "⠉",
+    4: "⠙", 5: "⠑", 6: "⠋",
+    7: "⠛", 8: "⠓", 9: "⠊"
+};
+
+// Escuchar cambios en el menú de temáticas
+document.getElementById("theme-select").addEventListener("change", function() {
+    theme = this.value;
+    displaySudoku(currentPuzzle); // refrescar la cuadrícula con la nueva temática
+});
+
+// ------------------------------
 // GESTIÓN DE ERRORES
 // ------------------------------
 let errorCount = 0;
@@ -362,24 +384,3 @@ function checkWin() {
 }
 
 
-// ------------------------------
-// TEMATICAS
-// ------------------------------
-let theme = "classic"; // tema por defecto
-
-const themeSelect = document.getElementById("theme-select");
-themeSelect.addEventListener("change", function() {
-    theme = this.value;
-    displaySudoku(currentPuzzle); // refresca la cuadrícula con el nuevo tema
-});
-const brailleMap = {
-    1: "⠁", 2: "⠃", 3: "⠉",
-    4: "⠙", 5: "⠑", 6: "⠋",
-    7: "⠛", 8: "⠓", 9: "⠊"
-};
-
-// Escuchar cambios en el menú de temáticas
-document.getElementById("theme-select").addEventListener("change", function() {
-    theme = this.value;
-    displaySudoku(currentPuzzle); // refrescar la cuadrícula con la nueva temática
-});
