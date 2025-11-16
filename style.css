@@ -108,9 +108,13 @@ h1 {
     }
 
     #sudoku-grid {
-        width: 90vw;
-        height: 90vw;  /* mantiene cuadrícula cuadrada */
-        gap: 0.5px;
+        margin: 20px auto;
+        width: min(450px, 90vw);
+        height: min(450px, 90vw);
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+        gap: 1px;
     }
 
     .cell {
