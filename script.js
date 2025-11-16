@@ -163,7 +163,11 @@ function displaySudoku(board) {
             if (j === 8) cell.classList.add("border-right");
 
             if (board[i][j] !== 0) {
-                cell.textContent = board[i][j];
+                if (theme === "braille") {
+                    cell.textContent = brailleMap[board[i][j]];
+                } else {
+                    cell.textContent = board[i][j];
+                }
                 cell.classList.add("fixed-cell");
             } else {
                 let input = document.createElement("input");
@@ -181,24 +185,70 @@ function displaySudoku(board) {
                     let val = this.value ? parseInt(this.value) : 0;
 
                     if (notesMode) {
-                        // Modo notas: no se modifica el tablero principal
                         if (val) {
-                            let notes = new Set(notesDiv.textContent.split("").map(Number));
+                            // obtener notas actuales como set
+                            let notes = new Set();
+                            notesDiv.querySelectorAll("span").forEach(s => notes.add(s.dataset.num ? parseInt(s.dataset.num) : parseInt(s.textContent)));
+                            
+                            // alternar la nota seleccionada
                             if (notes.has(val)) notes.delete(val);
                             else notes.add(val);
-                            notesDiv.textContent = Array.from(notes).sort().join("");
+
+                            // vaciar notas y volver a crear los spans
+                            notesDiv.innerHTML = ""; 
+
+                            const positions = {
+                                1: {top: "2%", left: "2%"},
+                                2: {top: "2%", left: "40%"},
+                                3: {top: "2%", left: "75%"},
+                                4: {top: "40%", left: "2%"},
+                                5: {top: "40%", left: "40%"},
+                                6: {top: "40%", left: "75%"},
+                                7: {top: "75%", left: "2%"},
+                                8: {top: "75%", left: "40%"},
+                                9: {top: "75%", left: "75%"}
+                            };
+
+                            Array.from(notes).sort().forEach(n => {
+                                let span = document.createElement("span");
+                                span.dataset.num = n;
+
+                                // Mostrar Braille si el tema es Braille
+                                if (theme === "braille") {
+                                    span.textContent = brailleMap[n]; // usa tu objeto brailleMap definido previamente
+                                } else {
+                                    span.textContent = n;
+                                }
+
+                                // Posición fija
+                                span.style.position = "absolute";
+                                span.style.top = positions[n].top;
+                                span.style.left = positions[n].left;
+
+                                // Font size dependiendo del tema
+                                span.style.fontSize = theme === "braille" ? "1em" : "1em";
+                                notesDiv.appendChild(span);
+                            });
                         }
                         this.value = ""; // no poner número principal en modo notas
                     } else {
                         // Modo normal: número principal
                         board[i][j] = val;
                         notesDiv.textContent = ""; // borrar notas al poner número
+
                         if (!checkCell(board, i, j, val)) {
                             this.style.backgroundColor = "#ff4d4d"; // rojo si hay error
                             errorCount++;
                             document.getElementById("error-count").textContent = errorCount;
                         } else {
                             this.style.backgroundColor = "#e0e0e0"; // gris si correcto
+                        }
+
+                        // Mostrar el número o símbolo según el tema
+                        if (theme === "braille" && val) {
+                            this.value = brailleMap[val];
+                        } else {
+                            this.value = val || "";
                         }
                     }
 
@@ -310,3 +360,20 @@ function checkWin() {
     }
     return true;
 }
+
+
+// ------------------------------
+// TEMATICAS
+// ------------------------------
+let theme = "classic"; // por defecto
+const brailleMap = {
+    1: "⠁", 2: "⠃", 3: "⠉",
+    4: "⠙", 5: "⠑", 6: "⠋",
+    7: "⠛", 8: "⠓", 9: "⠊"
+};
+
+// Escuchar cambios en el menú de temáticas
+document.getElementById("theme-select").addEventListener("change", function() {
+    theme = this.value;
+    displaySudoku(currentPuzzle); // refrescar la cuadrícula con la nueva temática
+});

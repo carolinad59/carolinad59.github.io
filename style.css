@@ -76,12 +76,36 @@ h1 {
 /* color de las casillas predeterminadas */
 .fixed-cell {
     background-color: white;
-    font-weight: bold;
+    display: flex;
+    justify-content: center; /* centrar horizontal */
+    align-items: center;     /* centrar vertical */
+    font-size: 22px;         /* mantener tamaño legible */
 }
 
 /* casillas escritas por el jugador */
 .cell input.correct {
     background-color: #e0e0e0;
+}
+
+.notes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    font-size: 0.6em;
+    color: gray;
+    pointer-events: none;
+    line-height: 1em;
+}
+
+.notes span {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #win-message {
