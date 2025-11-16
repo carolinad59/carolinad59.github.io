@@ -1,1 +1,3 @@
-
+git rm nothing nothing2 nothing3
+git commit -m "Delete nothing, nothing2, and nothing3"
+git push
