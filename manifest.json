@@ -2,7 +2,7 @@
   "name": "Sudoku App",
   "short_name": "Sudoku",
   "description": "Juega Sudoku desde tu móvil.",
-  "start_url": "./sudoku-app.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
