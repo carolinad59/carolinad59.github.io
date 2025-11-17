@@ -12,7 +12,7 @@
 </head>
 
 <body>
-    <h1>🔥 Los Sudoku de Caro 🔥</h1>
+    <h1><span class="fire">🔥</span> Los Sudoku de Caro <span class="fire">🔥</span></h1>
 
     <div id="timer">Tiempo: 00:00</div>
 
@@ -22,16 +22,21 @@
         <option value="romano">Imperio romano</option>
         <option value="braille">Braille</option>
         <option value="musical">Musical</option>
-
-
+        <option value="colores">Colores</option>
+        <option value="flores">Flores</option>
+        <option value="animales">Animales</option>
+        <option value="amor">Amor</option>
+        <option value="mundo">Mundo</option>
     </select>
 
     <div id="sudoku-grid"></div>
+    <div id="keypad" style="margin-top: 20px;"></div>
 
     <p>
         <button id="new-game">Nuevo Sudoku</button>
         <button id="restart-game">Reiniciar Sudoku</button>
         <button id="toggle-notes">Notas OFF</button>
+        <button id="toggle-probe">Probar OFF</button>
     </p>
 
     <label for="difficulty">Dificultad:</label>
