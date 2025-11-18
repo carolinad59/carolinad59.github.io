@@ -16,12 +16,15 @@ const ALPHABETS = {
     colores: {1:"🔴",2:"🟠",3:"🟡",4:"🟢",5:"🔵",6:"🟣",7:"🟤",8:"⚫",9:"⚪"},
     flores:  {1:"🌹",2:"🌺",3:"🌻",4:"🌼",5:"🌷",6:"🌸",7:"🏵️",8:"💐",9:"🌿"},
     animales: {1:"🐶",2:"🐱",3:"🐰",4:"🦊",5:"🐻",6:"🐼",7:"🦁",8:"🐯",9:"🦘"},
+    bombon: {1:"🍫",2:"🍬",3:"🍭",4:"🍯",5:"🍪",6:"🍩",7:"🧁",8:"🍰",9:"🍡"},
     amor: {1:"❤️",2:"🧡",3:"💛",4:"💚",5:"💙",6:"💜",7:"🖤",8:"🤍",9:"🤎"},
     mundo: {1:"🇫🇷",2:"🇪🇸",3:"🇺🇸",4:"🇦🇺",5:"🇮🇹",6:"🇬🇧",7:"🇯🇵",8:"🇧🇷",9:"🇨🇦"}
 };
 
 // Tema por defecto
 let theme = "classic"; // puede cambiarse desde un <select id="theme-select">
+// Matriz para marcar celdas introducidas en modo "Probar"
+let probeMarked = Array.from({ length: 9 }, () => Array(9).fill(false));
 
 // Helper para obtener símbolo según tema y valor numérico
 function renderSymbol(n) {
@@ -188,11 +191,54 @@ function removeNumbersSmart(board, level) {
                 if (newBoard[br+rr][bc+cc] !== 0) boxCount++;
 
         if (rowCount > 3 && colCount > 3 && boxCount > 3) {
+            // intentar remover y comprobar unicidad de la solución
+            const old = newBoard[r][c];
             newBoard[r][c] = 0;
-            removed++;
+            const solCount = countSolutions(newBoard, 2);
+            if (solCount === 1) {
+                removed++;
+            } else {
+                // no es único, restaurar
+                newBoard[r][c] = old;
+            }
         }
     }
     return newBoard;
+}
+
+// Contador de soluciones (backtracking) con límite para salir temprano
+function countSolutions(board, limit) {
+    let count = 0;
+
+    function findEmpty(b) {
+        for (let r = 0; r < 9; r++)
+            for (let c = 0; c < 9; c++)
+                if (b[r][c] === 0) return [r,c];
+        return null;
+    }
+
+    function backtrack(b) {
+        if (count >= limit) return; // stop early
+        const pos = findEmpty(b);
+        if (!pos) {
+            count++;
+            return;
+        }
+        const [r,c] = pos;
+        for (let n = 1; n <= 9; n++) {
+            if (isValid(b, r, c, n)) {
+                b[r][c] = n;
+                backtrack(b);
+                b[r][c] = 0;
+                if (count >= limit) return;
+            }
+        }
+    }
+
+    // Clonar tablero para no mutar el original
+    const clone = board.map(row => row.slice());
+    backtrack(clone);
+    return count;
 }
 
 // ------------------------------
@@ -310,8 +356,10 @@ function createCellElement(grid, board, row, col) {
         input.maxLength = 3;
         input.style.boxSizing = "border-box";
         input.style.textAlign = "center";
+        input.readOnly = true; // Solo lectura: se ingresa desde el teclado numérico
+        input.style.cursor = "not-allowed"; // Cursor indica que no se puede escribir
 
-        // Evento principal: input del usuario
+        // Evento principal: input del usuario (solo desde keypad)
         input.addEventListener("input", function(e) {
             handleCellInput(this, row, col, input, notesDiv);
         });
@@ -374,9 +422,11 @@ function handleCellInput(inputElement, row, col, input, notesDiv) {
             // MODO PRUEBA: todo en azul, sin contar errores
             if (val === 0) {
                 input.style.backgroundColor = "white";
+                input.style.color = "black";
                 input.value = "";
             } else {
-                input.style.backgroundColor = "#87CEEB"; // Azul cielo
+                input.style.backgroundColor = "#4169E1"; // Azul oscuro
+                input.style.color = "white";
                 input.value = renderSymbol(val);
                 // Reproducir nota musical si estamos en tema musical (también en prueba)
                 playMusicalNote(val);
@@ -386,6 +436,7 @@ function handleCellInput(inputElement, row, col, input, notesDiv) {
             if (val === 0) {
                 // celda vacía - restablecer a blanco
                 input.style.backgroundColor = "white";
+                input.style.color = "black";
                 input.value = "";
                 // Si era incorrecto antes, restar error
                 if (wasIncorrect) {
@@ -396,6 +447,7 @@ function handleCellInput(inputElement, row, col, input, notesDiv) {
             } else if (val !== solutionPuzzle[row][col]) {
                 // número incorrecto
                 input.style.backgroundColor = "#ff4d4d";
+                input.style.color = "white";
                 // Solo contar error si cambió a incorrecto (no era incorrecto antes)
                 if (!wasIncorrect && prevVal !== val) {
                     errorCount++;
@@ -404,7 +456,8 @@ function handleCellInput(inputElement, row, col, input, notesDiv) {
                 input.value = renderSymbol(val);
             } else {
                 // número correcto
-                input.style.backgroundColor = "#e0e0e0";
+                input.style.backgroundColor = "#c0e0c0";
+                input.style.color = "black";
                 input.value = renderSymbol(val);
                 // Si era incorrecto antes, restar error
                 if (wasIncorrect) {
@@ -466,29 +519,51 @@ function displayKeypad() {
                 });
             } else if (probeMode) {
                 // MODO PRUEBA: todo en azul, sin contar errores
-                currentPuzzle[i][j] = val;
-                notesDiv.innerHTML = ""; // BORRAR notas
-                input.value = renderSymbol(val);
-                input.style.backgroundColor = "#87CEEB"; // Azul cielo
-                playMusicalNote(val);
-                if (checkWin()) doWin();
+                // Si la celda ya tiene ese valor, lo borramos (toggle)
+                if (currentPuzzle[i][j] === val) {
+                    currentPuzzle[i][j] = 0;
+                    input.value = "";
+                    input.style.backgroundColor = "white";
+                    notesDiv.innerHTML = "";
+                } else {
+                    currentPuzzle[i][j] = val;
+                    notesDiv.innerHTML = ""; // BORRAR notas
+                    input.value = renderSymbol(val);
+                    input.style.backgroundColor = "#4169E1"; // Azul oscuro
+                    playMusicalNote(val);
+                    const probeResult = checkWin();
+                    if (probeResult === "win") doWin();
+                    else if (probeResult === "lose") doLose();
+                }
             } else {
                 // MODO NORMAL: poner número principal
-                currentPuzzle[i][j] = val;
-                notesDiv.innerHTML = ""; // BORRAR notas
-                input.value = renderSymbol(val);
-
-                if (val !== solutionPuzzle[i][j]) {
-                    input.style.backgroundColor = "#ff4d4d";
-                    errorCount++;
-                    document.getElementById("error-count").textContent = errorCount;
+                // Si la celda ya tiene ese valor, lo borramos (toggle)
+                if (currentPuzzle[i][j] === val) {
+                    currentPuzzle[i][j] = 0;
+                    input.value = "";
+                    input.style.backgroundColor = "white";
+                    notesDiv.innerHTML = "";
                 } else {
-                    input.style.backgroundColor = "#e0e0e0";
-                    // Reproducir nota musical si estamos en tema musical
-                    playMusicalNote(val);
-                }
+                    currentPuzzle[i][j] = val;
+                    notesDiv.innerHTML = ""; // BORRAR notas
+                    input.value = renderSymbol(val);
 
-                if (checkWin()) doWin();
+                    if (val !== solutionPuzzle[i][j]) {
+                        input.style.backgroundColor = "#ff4d4d";
+                        input.style.color = "white";
+                        errorCount++;
+                        document.getElementById("error-count").textContent = errorCount;
+                    } else {
+                        input.style.backgroundColor = "#c0e0c0";
+                        input.style.color = "black";
+                        // Reproducir nota musical si estamos en tema musical
+                        playMusicalNote(val);
+                    }
+
+                    const normalResult = checkWin();
+                    if (normalResult === "win") doWin();
+                    else if (normalResult === "lose") doLose();
+                }
             }
         });
 
@@ -515,54 +590,77 @@ function doWin() {
         audio.play().catch(() => { /* si no se puede reproducir, continuar */ });
     } catch (e) { /* ignorar errores de audio */ }
 
-    // Mensaje central con fondo blanco
+    // Mensaje central con fondo blanco y PLAY AGAIN button
     let winMessage = document.getElementById("win-message");
     if (!winMessage) {
         winMessage = document.createElement("div");
         winMessage.id = "win-message";
-        winMessage.textContent = "🎉 GANASTE 🎉";
         Object.assign(winMessage.style, {
             position: "fixed",
-            top: "35%",
+            top: "40%",
             left: "50%",
             transform: "translate(-50%,-50%)",
             fontSize: "3em",
             color: "#ff6600",
             backgroundColor: "white",
-            padding: "20px 40px",
+            padding: "30px 40px",
             borderRadius: "10px",
             zIndex: "1000",
             textAlign: "center",
             boxShadow: "0 10px 30px rgba(0,0,0,0.25)"
         });
+        
+        // Agregar texto y botón
+        const textDiv = document.createElement("div");
+        textDiv.textContent = "🎉 GANASTE 🎉";
+        winMessage.appendChild(textDiv);
+        
+        const playAgainBtn = document.createElement("button");
+        playAgainBtn.textContent = "JUGAR DE NUEVO";
+        Object.assign(playAgainBtn.style, {
+            marginTop: "15px",
+            padding: "8px 16px",
+            fontSize: "0.9em",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            fontWeight: "bold"
+        });
+        
+        playAgainBtn.addEventListener("click", newSudoku);
+        playAgainBtn.addEventListener("mouseover", () => {
+            playAgainBtn.style.backgroundColor = "#45a049";
+        });
+        playAgainBtn.addEventListener("mouseout", () => {
+            playAgainBtn.style.backgroundColor = "#4CAF50";
+        });
+        
+        winMessage.appendChild(playAgainBtn);
         document.body.appendChild(winMessage);
     }
 
-    // Pollito amarillo feliz que cae
-    const chick = document.createElement("div");
-    chick.textContent = "🐤";
-    Object.assign(chick.style, {
-        position: "fixed",
-        fontSize: "4em",
-        zIndex: "999",
-        userSelect: "none",
-        pointerEvents: "none",
-        animation: "chickFall 3s ease-in forwards"
-    });
-    
-    // Posición aleatoria en la parte superior
-    chick.style.left = Math.random() * 90 + 5 + "%";
-    chick.style.top = "-10%";
-    
-    document.body.appendChild(chick);
-    
-    // Crear múltiples pollitos cayendo
-    for (let i = 0; i < 3; i++) {
+    // Crear muchos pollitos cayendo (15 pollitos con animación escalonada)
+    for (let i = 0; i < 15; i++) {
         setTimeout(() => {
-            const c = chick.cloneNode(true);
-            c.style.left = Math.random() * 90 + 5 + "%";
-            document.body.appendChild(c);
-        }, i * 400);
+            const chick = document.createElement("div");
+            chick.textContent = "🐤";
+            Object.assign(chick.style, {
+                position: "fixed",
+                fontSize: "4em",
+                zIndex: "999",
+                userSelect: "none",
+                pointerEvents: "none",
+                animation: "chickFall 3s ease-in forwards"
+            });
+            
+            // Posición aleatoria en la parte superior
+            chick.style.left = Math.random() * 90 + 5 + "%";
+            chick.style.top = "-10%";
+            
+            document.body.appendChild(chick);
+        }, i * 150);
     }
 }
 
@@ -718,22 +816,96 @@ if (toggleProbeBtn) toggleProbeBtn.addEventListener("click", function() {
     this.textContent = probeMode ? "Probar ON" : "Probar OFF";
     this.classList.toggle("active", probeMode);
     
-    // Si desactivamos el modo prueba, restaurar colores correctos
+    // Si desactivamos el modo prueba, mostrar diálogo con dos opciones
     if (!probeMode) {
+        // Recolectar celdas azules (probadas)
         const inputs = document.querySelectorAll(".cell input");
+        const blueCells = [];
         inputs.forEach((input, idx) => {
             const row = Math.floor(idx / 9);
             const col = idx % 9;
-            const val = currentPuzzle[row][col];
-            
-            if (val === 0) {
-                input.style.backgroundColor = "white";
-            } else if (val !== solutionPuzzle[row][col]) {
-                input.style.backgroundColor = "#ff4d4d";
-            } else {
-                input.style.backgroundColor = "#e0e0e0";
+            // Buscar celdas que tienen valor pero no están fijas
+            if (input.value && input.style.backgroundColor !== "white" && input.style.backgroundColor !== "rgb(224, 224, 224)" && input.style.backgroundColor !== "#e0e0e0" && input.style.backgroundColor !== "") {
+                const cellRow = parseInt(input.parentElement.dataset.row);
+                const cellCol = parseInt(input.parentElement.dataset.col);
+                blueCells.push({ row: cellRow, col: cellCol, input, value: currentPuzzle[cellRow][cellCol] });
             }
         });
+        
+        if (blueCells.length > 0) {
+            // Crear diálogo con dos opciones
+            const dialog = document.createElement("div");
+            dialog.id = "probe-dialog";
+            Object.assign(dialog.style, {
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "white",
+                padding: "30px",
+                borderRadius: "10px",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+                zIndex: "2000",
+                textAlign: "center",
+                minWidth: "300px",
+                border: "2px solid black"
+            });
+            
+            dialog.innerHTML = `
+                <p style="font-size: 1.2em; margin-bottom: 20px; color: #333; font-weight: bold;">¿Qué deseas hacer con lo probado?</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="keep-blue-btn" style="padding: 10px 20px; font-size: 1em; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; font-weight: bold;">Conservar</button>
+                    <button id="clear-blue-btn" style="padding: 10px 20px; font-size: 1em; cursor: pointer; background-color: #f44336; color: white; border: none; border-radius: 5px; font-weight: bold;">Borrar</button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+            
+            // Opción 1: Conservar lo probado
+            const keepBtn = document.getElementById("keep-blue-btn");
+            keepBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                let newErrors = 0;
+                // Marcar celdas incorrectas en rojo, contar errores
+                blueCells.forEach(({ row, col, input, value }) => {
+                    if (value !== solutionPuzzle[row][col]) {
+                        input.style.backgroundColor = "#ff4d4d"; // Rojo si es incorrecto
+                        input.style.color = "white";
+                        newErrors++;
+                    } else {
+                        input.style.backgroundColor = "#c0e0c0"; // Verde claro si es correcto
+                    }
+                });
+                
+                errorCount += newErrors;
+                document.getElementById("error-count").textContent = errorCount;
+                dialog.remove();
+                
+                // Verificar win/lose después de conservar
+                const result = checkWin();
+                if (result === "win") doWin();
+                else if (result === "lose") doLose();
+            });
+            
+            // Opción 2: Borrar lo probado
+            const clearBtn = document.getElementById("clear-blue-btn");
+            clearBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Limpiar celdas azules
+                blueCells.forEach(({ row, col, input }) => {
+                    currentPuzzle[row][col] = 0;
+                    input.value = "";
+                    input.style.backgroundColor = "white";
+                    // Limpiar notas
+                    const notesDiv = input.parentElement.querySelector(".notes");
+                    if (notesDiv) notesDiv.innerHTML = "";
+                });
+                dialog.remove();
+            });
+        }
     }
 });
 
