@@ -1,10 +1,10 @@
-🎮 Sudoku App
+🎮 **Sudoku App**
 
 A fully interactive Sudoku game built with HTML, CSS, and JavaScript.
 Includes themes, notes mode, error tracking, difficulty levels, and mobile support.
 
-✨ Features
-🧩 Sudoku Generation
+✨ **Features
+🧩 Sudoku Generation**
 
 Generates a complete valid Sudoku board using backtracking.
 
@@ -12,20 +12,20 @@ Removes numbers intelligently depending on selected difficulty.
 
 Ensures playable puzzles with balanced row/column/box clues.
 
-🎨 Themes
+🎨 **Themes**
 
-Choose how numbers are displayed:
+- Choose how numbers are displayed:
 
-Classic (1–9)
+- Classic (1–9)
 
-Braille
+- Braille
 
-Roman numerals
+- Roman numerals
 
-Musical notes
+- Musical notes
 Easily extendable by editing the ALPHABETS object.
 
-✏️ Notes Mode
+✏️ **Notes Mode**
 
 Toggle notes ON/OFF.
 
@@ -33,7 +33,7 @@ Add or remove small candidate numbers inside cells.
 
 Notes update per-theme (e.g., Braille symbols).
 
-❗ Error Tracking
+❗ **Error Tracking**
 
 Each incorrect entry increases the global error counter.
 
@@ -41,13 +41,13 @@ Incorrect numbers are highlighted in red.
 
 Error counter persists even if the cell is corrected later.
 
-📱 Responsive Design
+📱 **Responsive Design**
 
 Works on desktop browsers (Chrome, Firefox, Safari).
 
 Optimized for iPhone and Android Safari/Chrome.
 
-✔️ Win Detection
+✔️ **Win Detection**
 
 The app continuously validates the board.
 
