@@ -165,10 +165,12 @@ function removeNumbersSmart(board, level) {
     let cellsToRemove;
     switch(level) {
         case "Fácil": cellsToRemove = 30; break;
-        case "Medio": cellsToRemove = 40; break;
-        case "Difícil": cellsToRemove = 50; break;
-        case "Imposible": cellsToRemove = 60; break;
-        default: cellsToRemove = 40;
+        case "Medio": cellsToRemove = 38; break;
+        case "Difícil": cellsToRemove = 46; break;
+        case "Avanzado": cellsToRemove = 52; break;
+        case "Maestro": cellsToRemove = 58; break;
+        case "Imposible": cellsToRemove = 64; break;
+        default: cellsToRemove = 38;
     }
 
     let newBoard = board.map(row => row.slice());
@@ -205,6 +207,125 @@ function removeNumbersSmart(board, level) {
         }
     }
     return newBoard;
+}
+
+// Función para crear trampa en modo imposible (1 de cada 3 sudokus)
+// Selecciona una celda dada y le pone un valor incorrecto que no crea duplicado inmediato
+function createImpossibleTrap(board) {
+    // 1 de cada 3 tendrá trampa
+    if (Math.random() > 0.33) {
+        return { hasTrap: false, board: board, trapInfo: null };
+    }
+
+    const boardCopy = board.map(row => row.slice());
+    
+    // Recopilar celdas con valores (givens)
+    const givenCells = [];
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            if (boardCopy[r][c] !== 0) {
+                // Calcular "dependencia" (número de celdas relacionadas ocupadas)
+                const dependency = countRelatedCells(boardCopy, r, c);
+                // Evitar esquinas obvias (0,0), (0,8), (8,0), (8,8)
+                const isCorner = (r === 0 || r === 8) && (c === 0 || c === 8);
+                if (!isCorner && dependency >= 10) { // Alta dependencia
+                    givenCells.push({ r, c, dependency });
+                }
+            }
+        }
+    }
+
+    if (givenCells.length === 0) {
+        return { hasTrap: false, board: boardCopy, trapInfo: null };
+    }
+
+    // Ordenar por dependencia descendente y seleccionar de los más dependientes
+    givenCells.sort((a, b) => b.dependency - a.dependency);
+    const candidates = givenCells.slice(0, Math.min(15, givenCells.length));
+
+    // Intentar crear trampa
+    for (let attempt = 0; attempt < 20; attempt++) {
+        const cell = candidates[Math.floor(Math.random() * candidates.length)];
+        const { r, c } = cell;
+        const originalValue = boardCopy[r][c];
+
+        // Buscar un valor que NO produzca duplicado inmediato
+        const possibleValues = [];
+        for (let v = 1; v <= 9; v++) {
+            if (v !== originalValue && !hasImmediateDuplicate(boardCopy, r, c, v)) {
+                possibleValues.push(v);
+            }
+        }
+
+        if (possibleValues.length === 0) continue;
+
+        // Probar cada valor posible
+        for (const trapValue of possibleValues) {
+            const testBoard = boardCopy.map(row => row.slice());
+            testBoard[r][c] = trapValue;
+
+            // Verificar si el puzzle resultante NO tiene solución
+            const solCount = countSolutions(testBoard, 1);
+            if (solCount === 0) {
+                // ¡Trampa exitosa!
+                return {
+                    hasTrap: true,
+                    board: testBoard,
+                    trapInfo: { r, c, originalValue, trapValue }
+                };
+            }
+        }
+    }
+
+    // No se pudo crear trampa, devolver puzzle normal
+    return { hasTrap: false, board: boardCopy, trapInfo: null };
+}
+
+// Contar celdas relacionadas ocupadas (misma fila/col/box)
+function countRelatedCells(board, row, col) {
+    let count = 0;
+    // Fila
+    for (let c = 0; c < 9; c++) {
+        if (board[row][c] !== 0) count++;
+    }
+    // Columna
+    for (let r = 0; r < 9; r++) {
+        if (board[r][col] !== 0) count++;
+    }
+    // Box
+    const br = Math.floor(row / 3) * 3;
+    const bc = Math.floor(col / 3) * 3;
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            if (board[br + r][bc + c] !== 0) count++;
+        }
+    }
+    return count;
+}
+
+// Verificar si un valor produce duplicado inmediato en fila/col/box
+function hasImmediateDuplicate(board, row, col, value) {
+    // Fila
+    for (let c = 0; c < 9; c++) {
+        if (c !== col && board[row][c] === value) return true;
+    }
+    // Columna
+    for (let r = 0; r < 9; r++) {
+        if (r !== row && board[r][col] === value) return true;
+    }
+    // Box
+    const br = Math.floor(row / 3) * 3;
+    const bc = Math.floor(col / 3) * 3;
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            const rr = br + r;
+            const cc = bc + c;
+            if ((rr !== row || cc !== col) && board[rr][cc] === value) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // Contador de soluciones (backtracking) con límite para salir temprano
@@ -256,6 +377,8 @@ let errorCount = 0;
 let notesMode = false;
 let probeMode = false; // Modo prueba
 let selectedCell = null;
+let hasImpossibleTrap = false; // Si el puzzle imposible tiene trampa
+let trapInfo = null; // Info sobre la trampa: {row, col, originalValue, trapValue}
 
 // Para posicionar notas: (1..9) => posiciones relativas CSS
 const NOTE_POSITIONS = {
@@ -777,12 +900,28 @@ document.head.appendChild(loseStyle);
 function newSudoku() {
     errorCount = 0;
     document.getElementById("error-count").textContent = errorCount;
+    hasImpossibleTrap = false;
+    trapInfo = null;
 
     currentLevel = document.getElementById("difficulty") ? document.getElementById("difficulty").value : "Fácil";
     const full = generateFullSudoku();
     solutionPuzzle = full.map(row => row.slice()); // Guardar la solución completa
-    currentPuzzle = removeNumbersSmart(full, currentLevel);
+    let puzzleBoard = removeNumbersSmart(full, currentLevel);
+
+    // Si es imposible, intentar crear trampa (1 de cada 3)
+    if (currentLevel === "Imposible") {
+        const trapResult = createImpossibleTrap(puzzleBoard);
+        hasImpossibleTrap = trapResult.hasTrap;
+        trapInfo = trapResult.trapInfo;
+        puzzleBoard = trapResult.board;
+    }
+
+    currentPuzzle = puzzleBoard;
     originalPuzzle = currentPuzzle.map(row => row.slice()); // clon profundo
+    
+    // Mostrar/ocultar botón rendirse según nivel
+    updateSurrenderButton();
+    
     // ocultar mensaje de victoria si existe
     const wm = document.getElementById("win-message");
     if (wm) wm.remove();
@@ -799,6 +938,14 @@ function restartSudoku() {
     displaySudoku(currentPuzzle);
     displayKeypad();
     startTimer();
+}
+
+// Actualizar visibilidad del botón rendirse
+function updateSurrenderButton() {
+    const surrenderBtn = document.getElementById("surrender-btn");
+    if (surrenderBtn) {
+        surrenderBtn.style.display = currentLevel === "Imposible" ? "inline-block" : "none";
+    }
 }
 
 // ligar botones (si existen)
@@ -936,6 +1083,10 @@ function startTimer() {
         updateTimerDisplay();
     }, 1000);
 }
+// Faltaba la función para detener el timer (usada en rendirse)
+function stopTimer() {
+    clearInterval(timer);
+}
 function updateTimerDisplay() {
     const m = String(Math.floor(seconds/60)).padStart(2,"0");
     const s = String(seconds%60).padStart(2,"0");
@@ -977,7 +1128,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.getElementById("difficulty")) {
         const sel = document.createElement("select");
         sel.id = "difficulty";
-        ["Fácil","Medio","Difícil","Imposible"].forEach(o => {
+        ["Fácil","Medio","Difícil","Avanzado","Maestro","Imposible"].forEach(o => {
             const opt = document.createElement("option"); opt.text = o; sel.add(opt);
         });
         document.body.appendChild(sel);
@@ -1000,6 +1151,92 @@ const statsBtn = document.getElementById("btn-stats");
 if (statsBtn) {
     statsBtn.addEventListener("click", () => {
         window.location.href = "statistics.html"; // abre nueva página
+    });
+}
+
+// Botón rendirse (solo modo imposible)
+const surrenderBtn = document.getElementById("surrender-btn");
+if (surrenderBtn) {
+    surrenderBtn.addEventListener("click", () => {
+        if (currentLevel !== "Imposible") return;
+
+        stopTimer();
+        
+        let message = "";
+        if (hasImpossibleTrap && trapInfo) {
+            // Mostrar la trampa
+            message = `🎭 ¡TRAMPA DETECTADA!<br><br>Este sudoku tenía una trampa desde el inicio:<br>Celda (${trapInfo.r + 1}, ${trapInfo.c + 1})<br>Valor correcto: ${renderSymbol(trapInfo.originalValue)}<br>Valor trampa: ${renderSymbol(trapInfo.trapValue)}<br><br>¡Era imposible de resolver!`;
+        } else {
+            // Mostrar la solución
+            message = "💡 Aquí está la solución correcta.<br>Este sudoku SÍ tenía solución.";
+            displaySudoku(solutionPuzzle);
+        }
+
+        const overlay = document.createElement("div");
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+        
+        const box = document.createElement("div");
+        box.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        `;
+        
+        box.innerHTML = `
+            <h2 style="margin-top:0; color:#ff5722;">🏳️ Te has rendido</h2>
+            <p style="font-size:1.1em; line-height:1.6;">${message}</p>
+            <button id="close-surrender" style="
+                margin-top: 20px;
+                padding: 12px 30px;
+                font-size: 1.1em;
+                background: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+            ">Aceptar</button>
+        `;
+        
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        document.getElementById("close-surrender").addEventListener("click", () => {
+            overlay.remove();
+            if (!hasImpossibleTrap) {
+                // Si mostramos solución, marcar todas las celdas como correctas
+                const cells = document.querySelectorAll(".cell");
+                cells.forEach(cell => {
+                    cell.style.backgroundColor = "#90EE90";
+                    cell.style.color = "black";
+                });
+            }
+        });
+        
+        // Registrar como derrota
+        recordGame(false);
+    });
+}
+
+// Listener para cambio de dificultad
+const difficultySelect = document.getElementById("difficulty");
+if (difficultySelect) {
+    difficultySelect.addEventListener("change", () => {
+        updateSurrenderButton();
     });
 }
 

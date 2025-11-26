@@ -58,7 +58,7 @@ function renderGlobalSummary() {
 
 function getCategories() {
     if (currentFilter === 'difficulty') {
-        const levels = ["Fácil","Medio","Difícil","Imposible"];
+        const levels = ["Fácil","Medio","Difícil","Avanzado","Maestro","Imposible"];
         return levels.filter(lv => statsData.some(g => g.level === lv));
     } else {
         // Obtener temáticas únicas jugadas
