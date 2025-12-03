@@ -1,7 +1,13 @@
-const cacheName = 'sudoku-pwa-v1';
+const cacheName = 'sudoku-pwa-v2';
 const assetsToCache = [
+  './',
   './index.html',
+  './style.css',
+  './script.js',
+  './statistics.html',
+  './statistics.js',
   './manifest.json',
+  './logo.svg',
   './icon-192.png',
   './icon-512.png'
 ];
@@ -15,7 +21,11 @@ self.addEventListener('install', event => {
 
 // Activación
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.filter(k => k !== cacheName).map(k => caches.delete(k))
+    )).then(() => self.clients.claim())
+  );
 });
 
 // Intercepción de peticiones

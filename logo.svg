@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Sudoku Color logo">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#FFDEE9"/>
+      <stop offset="0.5" stop-color="#B5FFFC"/>
+      <stop offset="1" stop-color="#D9BBFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+    <!-- Emoji-style glossy highlight gradient (brighter top) -->
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.9)"/>
+      <stop offset="0.35" stop-color="rgba(255,255,255,0.35)"/>
+      <stop offset="0.6" stop-color="rgba(255,255,255,0.12)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="16" y="16" width="480" height="480" rx="64" fill="url(#bgGrad)" filter="url(#shadow)"/>
+
+  <!-- Title subtle S mark (top-left) -->
+
+  <!-- Central 3x3 colored grid -->
+  <g id="grid" transform="translate(60,68)">
+    <!-- layout: circle diameter 120, gap 16; centers at 60,196,332 -->
+    <!-- Row 1: red, orange, yellow -->
+    <g>
+      <circle cx="60"  cy="60"  r="52" fill="#E63631"/>
+      <circle cx="196" cy="60"  r="52" fill="#EF983D"/>
+      <circle cx="332" cy="60"  r="52" fill="#FCDA4B"/>
+      <!-- glossy highlights -->
+      <circle cx="60"  cy="60"  r="52" fill="url(#gloss)"/>
+      <circle cx="196" cy="60"  r="52" fill="url(#gloss)"/>
+      <circle cx="332" cy="60"  r="52" fill="url(#gloss)"/>
+    </g>
+    <!-- Row 2: green, blue, violet -->
+    <g>
+      <circle cx="60"  cy="196" r="52" fill="#5BC432"/>
+      <circle cx="196" cy="196" r="52" fill="#1973DD"/>
+      <circle cx="332" cy="196" r="52" fill="#AE50F7"/>
+      <circle cx="60"  cy="196" r="52" fill="url(#gloss)"/>
+      <circle cx="196" cy="196" r="52" fill="url(#gloss)"/>
+      <circle cx="332" cy="196" r="52" fill="url(#gloss)"/>
+    </g>
+    <!-- Row 3: maroon, black, white -->
+    <g>
+      <circle cx="60"  cy="332" r="52" fill="#86542F"/>
+      <circle cx="196" cy="332" r="52" fill="#161614"/>
+      <circle cx="332" cy="332" r="52" fill="#D9D9D9"/>
+      <circle cx="60"  cy="332" r="52" fill="url(#gloss)"/>
+      <circle cx="196" cy="332" r="52" fill="url(#gloss)"/>
+      <circle cx="332" cy="332" r="52" fill="url(#gloss)"/>
+    </g>
+
+    <!-- White grid frame (centered with extra margin) -->
+    <rect x="-20" y="-20" width="416" height="416" rx="30" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="6"/>
+    <!-- subtle inner separators (thin) adjusted to new bounds -->
+    <g stroke="rgba(255,255,255,0.65)" stroke-width="3" stroke-linecap="round">
+      <line x1="128" y1="-20" x2="128" y2="396"/>
+      <line x1="264" y1="-20" x2="264" y2="396"/>
+      <line x1="-20" y1="128" x2="396" y2="128"/>
+      <line x1="-20" y1="264" x2="396" y2="264"/>
+    </g>
+  </g>
+
+  <!-- subtle app name label (bottom) -->
+  <text x="256" y="488" font-family="Inter, Arial, sans-serif" font-size="22" fill="#000000" text-anchor="middle">Sudokus de Caro</text>
+</svg>
